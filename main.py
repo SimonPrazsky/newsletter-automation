@@ -40,6 +40,13 @@ SECTIONS = {
 }
 
 
+STYLES = {
+    "regular": "Běžná akce",
+    "ticket":  "Ticketová akce",
+    "mass":    "Mše / bohoslužba",
+}
+
+
 @dataclass
 class Event:
     id: str = ""
@@ -50,6 +57,8 @@ class Event:
     url: str = "#"
     description: str = ""   # Raw HTML allowed (links etc.)
     has_hand: bool = False   # Show the pointing-hand emoji image
+    style: str = "regular"  # regular | ticket | mass
+    color: str = "#7D211A"  # Background colour used for ticket style
 
 
 @dataclass
@@ -130,10 +139,59 @@ def _title_link(ev: Event) -> str:
 
 
 def _render_week_event(ev: Event) -> str:
+    s = ev.style or "regular"
+    if s == "ticket":
+        return _render_ticket_event(ev)
+    if s == "mass":
+        return _render_mass_event(ev)
+    return _render_regular_event(ev)
+
+
+def _render_regular_event(ev: Event) -> str:
     return (
         '<div style="border:2px solid #7D211A;border-radius:30px;'
         "padding:13px 13px 13px 25px;background:#ffffff;font-size:14px;"
         'line-height:1.3;width:400px;box-sizing:border-box;margin:0 0 10px 0;">\n'
+        f"{_title_link(ev)}<br>\n{ev.description}\n</div>"
+    )
+
+
+def _render_ticket_event(ev: Event) -> str:
+    """Ticket-style event: coloured card matching the main highlight box design."""
+    c = ev.color or "#7D211A"
+    date_str = htmlesc.escape(ev.date)
+    return (
+        f'<div style="width:400px;margin:0 0 10px 0;padding:0;background:{c};border-radius:8px;">'
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"'
+        f' style="border-collapse:collapse;background:{c};border-radius:6px;"><tr>'
+        f'<td width="12" style="width:12px;padding:0;">'
+        f'<div style="width:12px;height:12px;background:#fff;border-radius:50%;margin-left:-6px;"></div></td>'
+        f'<td style="padding:12px 18px;">'
+        f'<div style="border-bottom:1px dashed rgba(255,255,255,.6);padding-bottom:8px;margin-bottom:8px;">'
+        f'<a href="{htmlesc.escape(ev.url)}" style="font-family:Georgia,serif;font-size:15px;'
+        f'font-weight:700;text-transform:uppercase;color:#fff;">{htmlesc.escape(ev.title)}</a>'
+        f'<span style="float:right;font-family:Georgia,serif;font-weight:700;color:#fff;font-size:13px;">'
+        f"{date_str}</span></div>"
+        f'<div style="font-family:Arial,sans-serif;font-size:13px;color:#fff;line-height:1.4;">'
+        f"{ev.description}"
+        f"{_HAND_IMG if ev.has_hand else ''}"
+        f"</div></td>"
+        f'<td width="12" style="width:12px;padding:0;">'
+        f'<div style="width:12px;height:12px;background:#fff;border-radius:50%;margin-right:-6px;"></div></td>'
+        f"</tr></table></div>"
+    )
+
+
+def _render_mass_event(ev: Event) -> str:
+    """Mass / church-service style: compact warm-grey card."""
+    date_str = htmlesc.escape(ev.date)
+    if ev.day_name:
+        date_str += " " + htmlesc.escape(ev.day_name)
+    return (
+        '<div style="padding:10px 10px 10px 25px;margin:0 0 10px 0;'
+        'background:#f9f4f0;border-radius:8px;border-left:3px solid #7D211A;'
+        'width:400px;box-sizing:border-box;">\n'
+        f'<div style="font-size:12px;color:#888;margin-bottom:3px;">✝ {date_str}</div>\n'
         f"{_title_link(ev)}<br>\n{ev.description}\n</div>"
     )
 
@@ -392,6 +450,9 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: Arial, sans-serif
 .badge-week     { background: #f0e8e8; color: #7D211A; }
 .badge-later    { background: #eee; color: #555; }
 .badge-external { background: #ddeaff; color: #3a5f9d; }
+.badge-style-regular { background: #f0e8e8; color: #7D211A; }
+.badge-style-ticket  { background: #7D211A; color: #fff; }
+.badge-style-mass    { background: #f9f4f0; color: #7D211A; border: 1px solid #c9a99a; }
 .sortable-ghost { opacity: .35; }
 .empty-msg { color: #aaa; font-size: 13px; font-style: italic; padding: 10px 4px; }
 
@@ -431,7 +492,7 @@ function showTab(name) {
     code.style.display  = 'none';
   } else {
     frame.style.display = 'none';
-    code.style.display  = '';
+    code.style.display  = 'block';
     refreshHtml();
   }
 }
@@ -510,6 +571,12 @@ function hideEditForm() {
   document.getElementById('edit-form-wrap').innerHTML = '';
 }
 
+/* ─── Style-selector colour-row toggle ─────────────────────────── */
+function toggleColorRow(uid, val) {
+  var row = document.getElementById('color-row-' + uid);
+  if (row) row.style.display = val === 'ticket' ? 'flex' : 'none';
+}
+
 /* ─── HTMX lifecycle hooks ──────────────────────────────────────── */
 document.addEventListener('htmx:afterSettle', function(evt) {
   const tid = evt.detail && evt.detail.target && evt.detail.target.id;
@@ -519,6 +586,7 @@ document.addEventListener('htmx:afterSettle', function(evt) {
     initSortable();
     refreshAll();
     hideEditForm();
+    hideAddForm();   // also close the "add" form after a successful add
   }
   if (tid === 'config-msg') refreshAll();
 });
@@ -540,12 +608,17 @@ def _badge(section: str) -> FT:
     return Span(labels.get(section, section), cls=f"badge badge-{section}")
 
 
+def _style_badge(style: str) -> FT:
+    labels = {"regular": "běžná", "ticket": "ticket", "mass": "mše"}
+    return Span(labels.get(style, style), cls=f"badge badge-style-{style}")
+
+
 def _event_card(ev: Event) -> FT:
     meta = ev.date + (" " + ev.day_name if ev.day_name else "")
     return Div(
-        Span("⠿", cls="handle", title="Přetáhněte pro seřazení"),
+        Span("☰", cls="handle", title="Přetáhněte pro změnu pořadí"),
         Div(
-            _badge(ev.section),
+            Div(_badge(ev.section), _style_badge(ev.style or "regular")),
             Div(meta.strip(), cls="card-meta"),
             Div(ev.title or "(bez názvu)", cls="card-title"),
             Div(
@@ -590,17 +663,43 @@ def _event_form(ev: Event | None = None, *, action: str = "/events") -> FT:
     """Render an add or edit form pre-filled with ev's data (or blanks)."""
     e = ev or Event()
     is_edit = bool(e.id)
+    ev_style = e.style or "regular"
+    ev_color = e.color or "#7D211A"
+    uid = e.id or "new"
     return Form(
         Input(type="hidden", name="id", value=e.id),
         Div(
-            Label("Sekce"),
-            Select(
-                Option("V týdnu",   value="week",     selected=(e.section == "week")),
-                Option("Dále",      value="later",    selected=(e.section == "later")),
-                Option("Od jinud",  value="external", selected=(e.section == "external")),
-                name="section",
+            Div(
+                Label("Sekce"),
+                Select(
+                    Option("V týdnu",   value="week",     selected=(e.section == "week")),
+                    Option("Dále",      value="later",    selected=(e.section == "later")),
+                    Option("Od jinud",  value="external", selected=(e.section == "external")),
+                    name="section",
+                ),
+                cls="field",
             ),
+            Div(
+                Label("Styl bloku"),
+                Select(
+                    Option("Běžná akce",      value="regular", selected=(ev_style == "regular")),
+                    Option("Ticketová akce",  value="ticket",  selected=(ev_style == "ticket")),
+                    Option("Mše / bohoslužba", value="mass",   selected=(ev_style == "mass")),
+                    name="style",
+                    id=f"style_{uid}",
+                    onchange=f"toggleColorRow('{uid}', this.value);",
+                ),
+                cls="field",
+            ),
+            cls="field-row",
+        ),
+        Div(
+            Label("Barva pozadí (jen pro Ticket styl)"),
+            Input(type="color", name="color", value=ev_color,
+                  style="height:38px;padding:2px 4px;"),
             cls="field",
+            id=f"color-row-{uid}",
+            style="display:flex;" if ev_style == "ticket" else "display:none;",
         ),
         Div(
             Div(Label("Datum"), Input(name="date", value=e.date, placeholder="2.3."), cls="field"),
@@ -618,8 +717,8 @@ def _event_form(ev: Event | None = None, *, action: str = "/events") -> FT:
         ),
         Div(
             Input(type="checkbox", name="has_hand", value="1",
-                  id=f"has_hand_{e.id or 'new'}", checked=e.has_hand),
-            Label("Přidat ikonu ručičky 👆", **{"for": f"has_hand_{e.id or 'new'}"}),
+                  id=f"has_hand_{uid}", checked=e.has_hand),
+            Label("Přidat ikonu ručičky 👆", **{"for": f"has_hand_{uid}"}),
             cls="field-check",
         ),
         Div(
@@ -804,6 +903,8 @@ async def post(req: Request) -> FT:  # noqa: F811
         url=(form.get("url") or "#").strip(),
         description=(form.get("description") or "").strip(),
         has_hand=form.get("has_hand") == "1",
+        style=form.get("style", "regular"),
+        color=(form.get("color") or "#7D211A").strip(),
     )
     events.append(ev)
     _save_events()
@@ -834,6 +935,8 @@ async def put(eid: str, req: Request) -> FT:  # noqa: F811
             ev.url = (form.get("url") or "#").strip()
             ev.description = (form.get("description") or "").strip()
             ev.has_hand = form.get("has_hand") == "1"
+            ev.style = form.get("style", "regular")
+            ev.color = (form.get("color") or "#7D211A").strip()
             break
     _save_events()
     return _event_list()
