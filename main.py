@@ -5,8 +5,9 @@ A locally-hosted FastHTML web application for composing the weekly VKH Praha
 newsletter.  The app lets you:
 
   • Add / edit / delete event rows (V týdnu, Dále, Od jinud sections).
+  • Choose a block style for each event: Běžná akce, Ticketová akce, Mše/bohoslužba.
   • Reorder events via drag-and-drop (SortableJS).
-  • Configure the newsletter header and the optional highlight / ticket box.
+  • Configure the newsletter header date range.
   • Preview the generated newsletter HTML in an embedded iframe.
   • Copy the finished HTML to the clipboard in one click.
 
@@ -23,7 +24,7 @@ from __future__ import annotations
 import html as htmlesc
 import json
 import uuid
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields as _dataclass_fields
 from datetime import date as _date_cls
 from pathlib import Path
 
@@ -94,14 +95,6 @@ class Event:
 @dataclass
 class Config:
     date_range: str = "od 2. 3. – 8. 3. 2026"
-    show_highlight: bool = True
-    highlight_color: str = "#a76a65"
-    highlight_title: str = "PLES VKH PRAHA"
-    highlight_date: str = "9. 4. 2026"
-    highlight_venue: str = "Na Maninách, Holešovice"
-    highlight_time: str = "19 hodin"
-    highlight_url: str = "https://tickets.alabanda.cz/"
-    highlight_ticket_text: str = "Nákup lístku zde"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -124,7 +117,10 @@ def _load_state() -> None:
             events = []
     if CONFIG_FILE.exists():
         try:
-            config = Config(**json.loads(CONFIG_FILE.read_text("utf-8")))
+            data = json.loads(CONFIG_FILE.read_text("utf-8"))
+            # Strip fields that no longer exist in Config (backward compat)
+            known = {f.name for f in _dataclass_fields(Config)}
+            config = Config(**{k: v for k, v in data.items() if k in known})
         except Exception:
             config = Config()
 
@@ -248,30 +244,8 @@ def _render_date_header(date: str, day_name: str) -> str:
 
 
 def _render_highlight(cfg: Config) -> str:
-    if not cfg.show_highlight:
-        return ""
-    c = cfg.highlight_color
-    return (
-        f'<div style="width:400px;margin:10px 0;padding:0;background:{c};border-radius:8px;">'
-        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"'
-        f' style="border-collapse:collapse;background:{c};border-radius:6px;"><tr>'
-        f'<td width="12" style="width:12px;padding:0;">'
-        f'<div style="width:12px;height:12px;background:#fff;border-radius:50%;margin-left:-6px;"></div></td>'
-        f'<td style="padding:15px 20px;">'
-        f'<div style="border-bottom:1px dashed #fff;padding-bottom:10px;margin-bottom:10px;">'
-        f'<span style="font-family:Georgia,serif;font-size:16px;font-weight:700;text-transform:uppercase;color:#fff;">'
-        f"{htmlesc.escape(cfg.highlight_title)}</span>"
-        f'<span style="float:right;font-family:Georgia,serif;font-weight:700;color:#fff;">'
-        f"{htmlesc.escape(cfg.highlight_date)}</span></div>"
-        f'<div style="font-family:Arial,sans-serif;font-size:14px;color:#fff;line-height:1.3;">'
-        f"{htmlesc.escape(cfg.highlight_venue)}<br>začíná v {htmlesc.escape(cfg.highlight_time)}<br>"
-        f'<a href="{htmlesc.escape(cfg.highlight_url)}" style="color:#fff;font-weight:700;text-decoration:underline;">'
-        f"{htmlesc.escape(cfg.highlight_ticket_text)}</a>{_HAND_IMG}"
-        f"</div></td>"
-        f'<td width="12" style="width:12px;padding:0;">'
-        f'<div style="width:12px;height:12px;background:#fff;border-radius:50%;margin-right:-6px;"></div></td>'
-        f"</tr></table></div>"
-    )
+    """Kept as a no-op; highlight box is now managed as a Ticketová akce event."""
+    return ""
 
 
 def generate_newsletter(cfg: Config, evs: list[Event]) -> str:
@@ -642,6 +616,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 """)
 
+_HTMX = Script(src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.js")
 _SORTABLE = Script(src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js")
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -803,50 +778,11 @@ def _config_form() -> FT:
         Summary("⚙ Nastavení newsletteru"),
         Div(
             Form(
-                Div(Label("Rozsah dat (zobrazuje se v hlavičce)"),
+                Div(
+                    Label("Rozsah dat (hlavička newsletteru)"),
                     Input(name="date_range", value=config.date_range,
                           placeholder="od 2. 3. – 8. 3. 2026"),
-                    cls="field"),
-                Div(
-                    Input(type="checkbox", name="show_highlight", value="1",
-                          id="show_highlight", checked=config.show_highlight),
-                    Label("Zobrazit highlight / ticketový box", **{"for": "show_highlight"}),
-                    cls="field-check",
-                ),
-                Div(
-                    Div(Label("Název události"),
-                        Input(name="highlight_title", value=config.highlight_title),
-                        cls="field"),
-                    Div(Label("Datum"),
-                        Input(name="highlight_date", value=config.highlight_date,
-                              placeholder="9. 4. 2026"),
-                        cls="field"),
-                    cls="field-row",
-                ),
-                Div(
-                    Div(Label("Místo konání"),
-                        Input(name="highlight_venue", value=config.highlight_venue),
-                        cls="field"),
-                    Div(Label("Čas"),
-                        Input(name="highlight_time", value=config.highlight_time),
-                        cls="field"),
-                    cls="field-row",
-                ),
-                Div(Label("URL lístků"),
-                    Input(name="highlight_url", value=config.highlight_url,
-                          placeholder="https://…"),
-                    cls="field"),
-                Div(
-                    Div(Label("Text odkazu"),
-                        Input(name="highlight_ticket_text",
-                              value=config.highlight_ticket_text),
-                        cls="field"),
-                    Div(Label("Barva pozadí"),
-                        Input(type="color", name="highlight_color",
-                              value=config.highlight_color,
-                              style="height:38px;padding:2px 4px;"),
-                        cls="field"),
-                    cls="field-row",
+                    cls="field",
                 ),
                 Div(
                     Button("Uložit nastavení", type="submit", cls="btn btn-red btn-sm"),
@@ -869,6 +805,7 @@ def _main_page() -> FT:
             Title("VKH Newsletter Builder"),
             Meta(charset="utf-8"),
             Meta(name="viewport", content="width=device-width, initial-scale=1"),
+            _HTMX,
             _SORTABLE,
             _CSS,
         ),
@@ -1039,14 +976,6 @@ async def post_reorder(req: Request):  # noqa: F811
 async def post_config(req: Request) -> FT:  # noqa: F811
     form = await req.form()
     config.date_range = (form.get("date_range") or "").strip()
-    config.show_highlight = form.get("show_highlight") == "1"
-    config.highlight_color = form.get("highlight_color") or "#a76a65"
-    config.highlight_title = (form.get("highlight_title") or "").strip()
-    config.highlight_date = (form.get("highlight_date") or "").strip()
-    config.highlight_venue = (form.get("highlight_venue") or "").strip()
-    config.highlight_time = (form.get("highlight_time") or "").strip()
-    config.highlight_url = (form.get("highlight_url") or "#").strip()
-    config.highlight_ticket_text = (form.get("highlight_ticket_text") or "").strip()
     _save_config()
     return Span("✓ Uloženo", cls="notice-ok")
 
