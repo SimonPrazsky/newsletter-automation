@@ -213,3 +213,8 @@ __marimo__/
 events.json
 config.json
 .sesskey
+
+bin/*
+include/*
+lib/*
+pyvenv.cfg
