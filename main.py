@@ -24,10 +24,40 @@ import html as htmlesc
 import json
 import uuid
 from dataclasses import asdict, dataclass
+from datetime import date as _date_cls
 from pathlib import Path
 
 from fasthtml.common import *
 from starlette.responses import HTMLResponse, PlainTextResponse
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Date helpers (Czech locale)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Monday=0 … Sunday=6  (matches Python's date.weekday())
+_CZECH_DAYS = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota", "Neděle"]
+
+
+def _date_to_iso(date_str: str) -> str:
+    """Convert Czech 'D.M.' to ISO 'YYYY-MM-DD' using the current year."""
+    try:
+        parts = date_str.rstrip(".").split(".")
+        if len(parts) >= 2:
+            day, month = int(parts[0]), int(parts[1])
+            return f"{_date_cls.today().year}-{month:02d}-{day:02d}"
+    except (ValueError, AttributeError):
+        pass
+    return ""
+
+
+def _today_defaults() -> tuple[str, str, str]:
+    """Return (czech_date, iso_date, czech_day_name) for today."""
+    today = _date_cls.today()
+    czech = f"{today.day}.{today.month}."
+    iso = today.isoformat()
+    day_name = _CZECH_DAYS[today.weekday()]
+    return czech, iso, day_name
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Data models
@@ -577,6 +607,21 @@ function toggleColorRow(uid, val) {
   if (row) row.style.display = val === 'ticket' ? 'flex' : 'none';
 }
 
+/* ─── Date picker auto-fill ─────────────────────────────────────── */
+function onDatePick(uid) {
+  var picker = document.getElementById('datepicker_' + uid);
+  if (!picker || !picker.value) return;
+  var parts = picker.value.split('-');
+  if (parts.length !== 3) return;
+  var year = parseInt(parts[0], 10), month = parseInt(parts[1], 10), day = parseInt(parts[2], 10);
+  var dateField = document.getElementById('dateval_' + uid);
+  if (dateField) dateField.value = day + '.' + month + '.';
+  var d = new Date(year, month - 1, day);
+  var dayNames = ['Neděle','Pondělí','Úterý','Středa','Čtvrtek','Pátek','Sobota'];
+  var dayField = document.getElementById('dayname_' + uid);
+  if (dayField) dayField.value = dayNames[d.getDay()];
+}
+
 /* ─── HTMX lifecycle hooks ──────────────────────────────────────── */
 document.addEventListener('htmx:afterSettle', function(evt) {
   const tid = evt.detail && evt.detail.target && evt.detail.target.id;
@@ -666,6 +711,11 @@ def _event_form(ev: Event | None = None, *, action: str = "/events") -> FT:
     ev_style = e.style or "regular"
     ev_color = e.color or "#7D211A"
     uid = e.id or "new"
+    # Date picker: convert stored Czech date to ISO, or default to today
+    _today_czech, _today_iso, _today_day = _today_defaults()
+    iso_date = _date_to_iso(e.date) if e.date else _today_iso
+    czech_date = e.date if e.date else _today_czech
+    day_name_val = e.day_name if e.day_name else _today_day
     return Form(
         Input(type="hidden", name="id", value=e.id),
         Div(
@@ -702,8 +752,22 @@ def _event_form(ev: Event | None = None, *, action: str = "/events") -> FT:
             style="display:flex;" if ev_style == "ticket" else "display:none;",
         ),
         Div(
-            Div(Label("Datum"), Input(name="date", value=e.date, placeholder="2.3."), cls="field"),
-            Div(Label("Den"),   Input(name="day_name", value=e.day_name, placeholder="Pondělí"), cls="field"),
+            Div(
+                Label("Datum"),
+                Input(type="date", id=f"datepicker_{uid}", value=iso_date,
+                      onchange=f"onDatePick('{uid}');",
+                      style="width:100%;padding:6px 9px;border:1px solid #ddd;"
+                             "border-radius:5px;font-size:13px;font-family:inherit;"),
+                Input(type="hidden", name="date", id=f"dateval_{uid}", value=czech_date),
+                cls="field",
+            ),
+            Div(
+                Label("Den"),
+                Input(name="day_name", id=f"dayname_{uid}", value=day_name_val,
+                      placeholder="Pondělí"),
+                P("Vyplní se automaticky.", cls="field-note"),
+                cls="field",
+            ),
             cls="field-row",
         ),
         Div(Label("Název akce *"), Input(name="title", value=e.title, placeholder="Název akce", required=True), cls="field"),
