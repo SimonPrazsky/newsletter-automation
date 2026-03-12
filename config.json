@@ -1,0 +1,41 @@
+{
+  "week_monday": "2026-03-16",
+  "date_range": "16.–22. března 2026",
+  "highlight_enabled": false,
+  "highlight_title": "",
+  "highlight_body": "",
+  "highlight_color": "#a76a65",
+  "mse_enabled": true,
+  "mse_note": "",
+  "mse_subevents": [
+    {
+      "label": "Svátost smíření / duchovní rozhovor",
+      "time": "17:30–18:45",
+      "detail": "P. Petr Hruška SJ – místnost 71 | S. Simeona CJ – místnost u vrátnice"
+    },
+    {
+      "label": "Růženec",
+      "time": "18:15",
+      "detail": "Sraz v průjezdu Ječná 2 – místnost 27"
+    },
+    {
+      "label": "PoStřeH",
+      "time": "20:10",
+      "detail": "Examen"
+    }
+  ],
+  "mse_infoboxes": [
+    {
+      "title": "Bar",
+      "body": "Hledáme barmany do týmu. Přidej se k nám!"
+    },
+    {
+      "title": "Ministrování",
+      "body": "Přijď 12 minut přede mší do sakristie. Kdokoli se může přidat."
+    },
+    {
+      "title": "#rytmig",
+      "body": "Sraz v 17:00 v průjezdu Ječná 2, zvonek Rytmig."
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+[
+  {
+    "id": "95381f1c-c867-49e8-9cbc-01e03609762a",
+    "weekday": 0,
+    "title": "Pondělní vysokoškolský klub",
+    "time": "19:00",
+    "place": "Družínský sál",
+    "description": "",
+    "auto_add": false,
+    "links": [
+      {
+        "url": "www.vkhpraha.cz/povyk",
+        "label": "www.vkhpraha.cz/povyk",
+        "hand": false
+      }
+    ],
+    "title_url": "",
+    "hand": false
+  },
+  {
+    "id": "0b8fedc5-7ca5-4eb9-ba6a-f0e77b030b71",
+    "weekday": 1,
+    "title": "Pomáháme lidem bez domova",
+    "time": "17:45",
+    "place": "Průjezd Ječná 2 - Místnost 27",
+    "description": "Přijďte pomáhat s přípravou a rozdáváním jídla a pití pro bezdomovce. ",
+    "auto_add": true,
+    "links": [
+      {
+        "url": "https://bit.ly/SluzbaChudym",
+        "label": "Přihlaš se zapsáním do tabulky",
+        "hand": false
+      }
+    ],
+    "title_url": "",
+    "hand": false
+  },
+  {
+    "id": "5dcaafd3-a526-46fd-8c58-6879d0e08044",
+    "weekday": 1,
+    "title": "Útes",
+    "time": "18:15",
+    "place": "Průjezd Ječná 2",
+    "description": "Spolčo. Přijď kdykoliv.",
+    "auto_add": true,
+    "links": [],
+    "title_url": "",
+    "hand": false
+  },
+  {
+    "id": "f86c8a8c-78bf-4d84-bcc6-f825e976da46",
+    "weekday": 1,
+    "title": "Tančírna v Družínské",
+    "time": "18:30",
+    "place": "Ječná 2 - Družínský sál",
+    "description": "Budeme rádi, když dáš vědět, že přijdeš:",
+    "auto_add": true,
+    "links": [
+      {
+        "url": "https://forms.gle/GKS4a7MmbXWxMqDD8",
+        "label": "Přihlásit se",
+        "hand": false
+      }
+    ],
+    "title_url": "",
+    "hand": false
+  },
+  {
+    "id": "2cecc6d6-9ac2-4cd5-bffe-a9354f9e12ec",
+    "weekday": 2,
+    "title": "Chill out",
+    "time": "16:30",
+    "place": "Podkroví VKH",
+    "description": "Máš před studentskou čas? Přijď chillovat do podkroví VKH. Jsi vítán kdykoliv od 16:30.",
+    "auto_add": true,
+    "links": [],
+    "title_url": "",
+    "hand": false
+  },
+  {
+    "id": "24771325-30cb-4ae8-9ec3-a70b89c2a8fa",
+    "weekday": 2,
+    "title": "Ranní modlitba s Písmem",
+    "time": "7:00",
+    "place": "Ječná 2",
+    "description": "Pravidelná modlitba s Písmem pokračující společnou snídaní.",
+    "auto_add": true,
+    "links": [],
+    "title_url": "",
+    "hand": false
+  },
+  {
+    "id": "65e4dbad-850e-42c9-8167-75cfc6c5f0f6",
+    "weekday": 3,
+    "title": "Herní večer",
+    "time": "18:00",
+    "place": "Podkroví VKH",
+    "description": "Deskovky v podkroví (můžeš dorazit i později).",
+    "auto_add": true,
+    "links": [],
+    "title_url": "",
+    "hand": false
+  },
+  {
+    "id": "0d0ce406-1d8e-4a30-9a4b-84aea97ddb88",
+    "weekday": 4,
+    "title": "Rorátní mše",
+    "time": "6:15",
+    "place": "Kostel sv. Ignáce, Ječná 2",
+    "description": "Adventní rorátní mše svatá. Svíčky zajištěny, přijď o minutu dříve.",
+    "auto_add": false,
+    "links": []
+  },
+  {
+    "id": "c7d548a7-23c2-45d0-8cbd-9714c85a80fe",
+    "weekday": 4,
+    "title": "Křížová cesta na Petříně",
+    "time": "6:20",
+    "place": "Pohořelec",
+    "description": "Tradiční křížová cesta v postní době. Sraz každý pátek v 6.20 na zastávce Pohořelec.",
+    "auto_add": false,
+    "links": [],
+    "title_url": "",
+    "hand": false
+  },
+  {
+    "id": "b45c5a19-cff7-4450-86cd-c26406ffd2d7",
+    "weekday": 5,
+    "title": "Chodíme s jezuity",
+    "time": "",
+    "place": "",
+    "description": "",
+    "auto_add": false,
+    "links": [],
+    "title_url": "",
+    "hand": false
+  }
+]
